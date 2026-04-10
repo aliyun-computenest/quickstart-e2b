@@ -206,6 +206,54 @@ E2B 集群版基于阿里云**弹性伸缩（ESS）**实现 API Worker 和 Clien
 
 > ⚠️ **裸金属限制**：Client Worker 必须使用裸金属实例（`ecs.ebmg6` / `ecs.ebmc6` 系列），扩容时请确保所选可用区有足够的裸金属资源配额。
 
+## 📊 可观测性配置（可选）
+
+E2B 集群版基于阿里云 **Prometheus**、**Grafana** 实现可观测性：按下列步骤集成 Prometheus 与 Loki 后，可在 Grafana 中统一查询 Metrics 与 Logs 并完成可视化。
+
+**操作步骤：**
+
+1. 登录 [阿里云可观测可视化 Grafana 控制台](https://armsnext.console.aliyun.com/grafana#/workspace)。
+
+2. 创建可观测可视化Grafana版：
+   - 在左侧导航栏，单击工作区管理。
+   - 在工作区列表中，单击创建工作区。
+   - 在购买页面，配置地域和集群部署地域一致，版本选择专家版或者高级版，Grafana版本号选择 Grafana 11.4.x，并单击立即购买。
+
+3. 开通私网地址：
+   - 在 [阿里云可观测可视化 Grafana 控制台](https://armsnext.console.aliyun.com/grafana#/workspace) 工作区列表中，选择创建的工作区。
+   - 在基本信息中，点击开通私网地址
+
+   ![img6.png](img6.png)
+
+   - 选择集群部署的 VPC、交换机以及安全组，点击开通
+
+4. 集成 Prometheus：
+   - 在工作区页面的云服务集成中，选择 Prometheus 监控服务，搜索 prometheus-e2b, 点击集成。
+
+   ![img7.png](img7.png)
+
+   - 集成数据源，配置ak、sk后，点击确认，请确认配置的 ak 具有 AliyunPrometheusMetricReadAccess 权限。
+
+5. 集成 Loki：
+   - 在工作区页面中，点击公网地址，进入 Grafana 公网页面。
+   - 在左侧导航栏中，点击添加新连接，选择 Loki。
+
+   ![img8.png](img8.png)
+
+   - 配置 Connection，填写URL格式为：http://{API Worker ECS 的私网 IP}:3100
+   
+   ![img9.png](img9.png)   
+
+   - 点击 Save & test 完成配置
+
+6. 集成数据查看：
+   - 在 Grafana 公网页面中，点击探索中的 Metrics，选择第 4 步配置的 Prometheus 集成的数据源，即可查看 Metrics 数据。
+
+   ![img10.png](img10.png)
+
+   - 在 Grafana 公网页面中，点击探索中的 Logs，选择第 5 步配置的 Loki 集成的数据源，即可查看 Logs 数据。
+
+   ![img11.png](img11.png)
 ---
 
 ## 📚 更多资源
