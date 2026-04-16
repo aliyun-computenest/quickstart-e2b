@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="计算巢是阿里云开放给企业应用服务商的服务管理平台。服务商能够在计算巢上发布私有化部署服务，为其客户提供云上软件一键部署的能力；同时也支持全托管模式的服务，赋能服务商托管其客户资源。">
+  <title>Home - Aliyun 计算巢 x Demo</title>
+
+  <link rel="shortcut icon" href="img/favicon.ico">
+
+  <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css">
+  <link rel="stylesheet" href="css/theme.css">
+  
+
+  
+
+  
+  
+
+  
+    <script src="search/main.js"></script>
+  
+
+  
+
+  <script src="js/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="nav-inner">
+        <div class="logo">
+          <img src="./img/logo-2x.png">
+        </div>
+        <div class="nav-list">
+          <ul>
+          
+              <li><a href="#_1">🌟 服务简介</a></li>
+              
+          
+              <li><a href="#_2">🚀 部署流程</a></li>
+              
+                  <li><a href="#1">1. 一键创建实例</a></li>
+                  
+              
+                  <li><a href="#2">2. 确认资源配置</a></li>
+                  
+              
+                  <li><a href="#3">3. 获取访问地址</a></li>
+                  
+              
+                  <li><a href="#4">4. 开始使用</a></li>
+                  
+              
+          
+              <li><a href="#_3">📚 使用指南</a></li>
+              
+          
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="content theme-github">
+      
+      <div class="content-inner">        
+        
+        <h2 id="_1">🌟 服务简介</h2>
+<p>E2B 社区版版是一个免费、开源的本地化代码执行引擎，适用于 LLM 智能体开发、自动化脚本测试、教育实验等场景。通过简洁的 Web 控制台或 RESTful API，用户可快速创建沙箱实例、上传文件、执行命令，并实时查看输出结果，所有操作均在容器级隔离环境中完成，保障主机系统安全。</p>
+<h2 id="_2">🚀 部署流程</h2>
+<h3 id="1">1. 一键创建实例</h3>
+<p>访问 <a href="https://computenest.console.aliyun.com/service/instance/create/cn-hangzhou?type=user&amp;ServiceId=service-318e76fe0ae7464f8d5c">计算巢 E2B 社区版部署页</a>，按页面提示填写基础参数：<br />
+<img alt="部署参数配置" src="1.jpg" /></p>
+<h3 id="2">2. 确认资源配置</h3>
+<p>系统将自动生成<strong>费用预估明细</strong>。确认后点击 <strong>下一步：确认订单</strong>。在订单确认页核对信息无误，点击 <strong>立即创建</strong>。</p>
+<h3 id="3">3. 获取访问地址</h3>
+<p>部署完成后，在控制台查看 <strong>E2B 访问地址</strong>：<br />
+<img alt="服务访问地址" src="2.jpg" /></p>
+<h3 id="4">4. 开始使用</h3>
+<p>首次使用需远程连接ECS，执行以下命令创建沙箱：</p>
+<pre><code class="language-shell">sudo su
+cd /root/infra
+make -C packages/shared/scripts local-build-base-template
+</code></pre>
+<p>沙箱创建完成后执行命令验证沙箱是否正常工作：</p>
+<pre><code class="language-shell">npm i -g @e2b/cli
+e2b template list
+</code></pre>
+<p><img alt="E2B 配置过程" src="3.jpg" /></p>
+<h2 id="_3">📚 使用指南</h2>
+<ul>
+<li><strong>官方文档</strong>：<a href="https://e2b.dev/docs">E2B 官方文档</a>（含沙箱 API、Python SDK、智能体集成示例）</li>
+</ul>
+        
+      </div>
+
+      <div class="copyrights">© 2009-2022 Aliyun.com 版权所有</div>
+    </div>
+  </div>
+  
+  <!--
+  MkDocs version      : 1.6.1
+  Docs Build Date UTC : 2026-04-16 02:59:26.122708+00:00
+  -->
+</body>
+</html>
