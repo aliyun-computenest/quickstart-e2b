@@ -33,13 +33,19 @@
 
 > ⚠️ **注意**：E2B 需要使用域名进行访问。您可以选择以下两种方式：
 >
-> - **公网域名**：购买公网域名并为其创建 TLS 证书，支持公网访问
-> - **自签名证书**：自定义一个域名并通过自签名生成 TLS 证书，**此方式无法通过公网访问，仅可在 VPC 内部调用**。生成方式可参考 [生成自签名证书](https://github.com/aliyun-computenest/quickstart-Sandbox-Manager-E2B/blob/main/docs/index.md)
+> - **公网域名**：购买公网域名并为其购买或生成自签名 TLS 证书，支持公网访问
+> - **自定义域名**：自定义一个域名并生成自定义的 TLS 证书，**此方式无法通过公网访问E2B集群，仅可在 VPC 内部调试调用**。因此我们预置的部分验证python脚本，如Desktop 沙箱部分无法体验。
+
+> - **生成TLS 证书**：生成方式可参考 [生成自签名证书](https://github.com/aliyun-computenest/quickstart-Sandbox-Manager-E2B/blob/main/docs/index.md)
 
 > 🕐 部署过程约需 10～20 分钟，请耐心等待。
 ### 3. 获取访问地址
 
-部署完成后，在计算巢控制台的实例详情页查看 **E2B API 访问地址**（格式为 `https://api.<your-domain>`）。
+部署完成后，在计算巢控制台的实例详情页查看各种配置内容，其中比较重要的是：
+- **E2B API URL**
+- **E2B API KEY**
+
+这两个内容需要配置到您的环境变量中，以通过SDK访问E2B集群。
 ![img3.png](img3.png)
 
 ### 4. 初始化基础沙箱模板
@@ -48,20 +54,24 @@
 
 ![img1.png](img1.png)
 
-```shell
+
+```bash
 sudo su
 cd /root/script
 sh create_template.sh
 ```
 
-该脚本会创建一个支持执行代码的基础沙箱模板。根据需求，您可以选择以下方式：
+这个脚本默认会构建**代码执行沙箱**模板，基于 `code-interpreter` 镜像，内置 Python 运行时，适合大多数 AI Agent 代码执行场景。
 
-- **代码执行沙箱**（默认）：使用镜像 `compute-nest-registry.cn-hangzhou.cr.aliyuncs.com/computenest/code-interpreter:latest`
-- **桌面操作沙箱**：将 `create_template.sh` 中的镜像替换为 `compute-nest-registry.cn-hangzhou.cr.aliyuncs.com/computenest/e2b-desktop:latest`
-- **自定义镜像沙箱**：通过以下命令指定自定义 Dockerfile：
-  ```shell
-  sh /root/script/create_template.sh --docker-file /path/to/your/dockerfile
-  ```
+根据你的业务需求，也可以选择其他类型的模板：
+
+```bash
+# sh /root/script/create_template.sh --type desktop
+# sh /root/script/create_template.sh --type browser-use
+
+# 自定义镜像沙箱（基于你自己的 Dockerfile 构建）
+sh /root/script/create_template.sh --docker-file /path/to/your/Dockerfile
+```
 
 构建完成后，验证模板是否就绪：
 
@@ -76,44 +86,56 @@ e2b template list
 ### 🐍 通过 Python SDK 使用
 
 #### 快速开始
+> ⚠️ **注意**：使用前，您需要配置好环境变量：
+> - E2B_ACCESS_TOKEN，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
+> - E2B_API_KEY，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
+> - E2B_DOMAIN，E2B 域名，您购买的公网域名or自定义域名
 
 以下示例演示了沙箱的完整生命周期：创建 → 执行命令 → 暂停 → 恢复。
 
 ```python
-import os
-import time
-from dotenv import load_dotenv
 from e2b import Sandbox
+import time
 
 def main():
-  load_dotenv(override=True)
+   # 1. 创建沙箱——从模板快照恢复，秒级完成
+   # template_id 为模板 ID
+   # timeout 为沙箱最大存活时间（秒），超时后自动销毁
+   # 步骤1: 创建 sandbox
+   print("\n[步骤1] 创建 sandbox...")
+   start_time = time.monotonic()
+   sandbox = Sandbox.create('dgllk1gmhsbar3l6d08l', timeout=1800)
+   input("按回车键继续..." + sandbox.envd_api_url)
 
-  # 步骤 1：创建沙箱
-  # template_id 为你在 E2B 中创建的模板 ID，使用默认模板可填 'base'
-  print("[步骤1] 创建 sandbox...")
-  sandbox = Sandbox.create('your-template-id', timeout=1800)
-  print(f"Sandbox ID: {sandbox.sandbox_id}")
-  print(f"envd host: {sandbox.get_host(49983)}")
+   time.sleep(5)
+   print(f"创建 sandbox 耗时: {time.monotonic() - start_time:.2f} 秒")
+   print(f"Sandbox ID: {sandbox.sandbox_id}")
+   print(f"envd host: {sandbox.get_host(49983)}")
+   result = sandbox.commands.run('echo "Hello from E2B Sandbox!"')
+   print(result.stdout)
 
-  # 步骤 2：在沙箱中执行命令
-  result = sandbox.commands.run('echo "Hello from E2B Sandbox!"')
-  print(result.stdout)  # 输出: Hello from E2B Sandbox!
+   # 步骤2: 暂停 sandbox
+   print("\n[步骤2] 执行 sandbox beta_pause...")
+   start_time = time.monotonic()
+   pause_success = sandbox.beta_pause()
+   print(f"pause 耗时: {time.monotonic() - start_time:.2f} 秒")
+   print(f"pause success: {pause_success}")
 
-  # 步骤 3：暂停沙箱（状态持久化，节省费用）
-  print("[步骤2] 暂停 sandbox...")
-  pause_success = sandbox.beta_pause()
-  print(f"暂停成功: {pause_success}")
+   print("等待 60 秒让 sandbox 完全暂停...")
+   time.sleep(60)
 
-  # 等待沙箱完全暂停
-  time.sleep(60)
+   # 步骤3: resume 并验证文件持久化
+   print("\n[步骤3] 重新连接 sandbox（resume）...")
+   start_time = time.monotonic()
+   same_sandbox = sandbox.connect(timeout=180)
+   print(f"connect 耗时: {time.monotonic() - start_time:.2f} 秒")
+   print(f"重新连接成功，Sandbox ID: {same_sandbox.sandbox_id}")
 
-  # 步骤 4：恢复沙箱（从暂停状态继续，数据不丢失）
-  print("[步骤3] 恢复 sandbox...")
-  resumed_sandbox = sandbox.connect(timeout=180)
-  print(f"恢复成功，Sandbox ID: {resumed_sandbox.sandbox_id}")
+
+   print("\n所有步骤执行完毕!")
 
 if __name__ == "__main__":
-  main()
+   main()
 ```
 
 #### 常用 API 说明
