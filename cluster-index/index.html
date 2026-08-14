@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="计算巢是阿里云开放给企业应用服务商的服务管理平台。服务商能够在计算巢上发布私有化部署服务，为其客户提供云上软件一键部署的能力；同时也支持全托管模式的服务，赋能服务商托管其客户资源。">
+  <title>Cluster index - Aliyun 计算巢 x Demo</title>
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  
+
+  
+
+  
+  
+
+  
+    <script src="../search/main.js"></script>
+  
+
+  
+
+  <script src="../js/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="nav-inner">
+        <div class="logo">
+          <img src="./img/logo-2x.png">
+        </div>
+        <div class="nav-list">
+          <ul>
+          
+              <li><a href="#e2b">🌟 E2B 简介</a></li>
+              
+                  <li><a href="#_1">核心特性</a></li>
+                  
+              
+                  <li><a href="#_2">整体架构</a></li>
+                  
+              
+          
+              <li><a href="#_3">🚀 部署流程</a></li>
+              
+                  <li><a href="#_4">前置条件</a></li>
+                  
+              
+                  <li><a href="#1">1. 一键创建实例</a></li>
+                  
+              
+                  <li><a href="#2">2. 确认资源配置</a></li>
+                  
+              
+          
+              <li><a href="#_5">四、部署成功后的检查</a></li>
+              
+                  <li><a href="#1_1">1. 获取访问地址与凭证</a></li>
+                  
+              
+                  <li><a href="#2-e2b-dashboard">2. 登录 E2B Dashboard</a></li>
+                  
+              
+                  <li><a href="#3-nomad-jobs">3. 通过 Nomad 检测 Jobs</a></li>
+                  
+              
+          
+              <li><a href="#_6">📖 使用流程</a></li>
+              
+                  <li><a href="#python-sdk">🐍 通过 Python SDK 使用</a></li>
+                  
+                      <li class="li-h3"><a href="#_7">快速开始</a></li>
+                  
+              
+                  <li><a href="#sandbox">用例一：演示 Sandbox 完整生命周期</a></li>
+                  
+              
+                  <li><a href="#template-template-sandbox">用例二：构建 Template，并从 Template 创建 Sandbox</a></li>
+                  
+              
+                  <li><a href="#computer-use">用例三：创建 Computer Use 桌面</a></li>
+                  
+              
+                  <li><a href="#e2b-cli">🖥️ 通过 E2B CLI 使用</a></li>
+                  
+                      <li class="li-h3"><a href="#_8">模板管理</a></li>
+                  
+                      <li class="li-h3"><a href="#_9">沙箱管理</a></li>
+                  
+              
+          
+              <li><a href="#_10">⚖️ 扩缩容配置</a></li>
+              
+                  <li><a href="#_11">手动扩缩容</a></li>
+                  
+              
+                  <li><a href="#_12">自动扩缩容</a></li>
+                  
+              
+                  <li><a href="#_13">注意事项</a></li>
+                  
+              
+          
+              <li><a href="#_14">📊 可观测性配置（可选）</a></li>
+              
+          
+              <li><a href="#_15"></a></li>
+              
+          
+              <li><a href="#_16">📚 更多资源</a></li>
+              
+          
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="content theme-github">
+      
+      <div class="content-inner">        
+        
+        <h2 id="e2b">🌟 E2B 简介</h2>
+<p><strong>E2B（Environment to Build）</strong> 是一个开源的云端沙箱代码执行引擎，专为 LLM 智能体、AI 编程助手、自动化测试等场景设计。它通过轻量级容器技术为每个请求提供完全隔离的执行环境，让 AI 模型可以安全地运行任意代码，而不会对宿主系统造成任何影响。</p>
+<h3 id="_1">核心特性</h3>
+<ul>
+<li><strong>🔒 安全隔离</strong>：每个沙箱运行在独立的容器环境中，完全隔离于宿主机和其他沙箱</li>
+<li><strong>⚡ 快速启动</strong>：沙箱实例秒级创建，支持暂停（Pause）与恢复（Resume），状态持久化</li>
+<li><strong>🐍 多语言支持</strong>：内置 Python、Node.js 等运行时，支持通过自定义 Dockerfile 扩展任意环境</li>
+<li><strong>📦 模板系统</strong>：支持将自定义环境打包为可复用的沙箱模板，一次构建、多次使用</li>
+<li><strong>🔌 多端接入</strong>：提供 Python SDK、TypeScript SDK 以及 CLI 工具，灵活集成到各类工作流</li>
+<li><strong>☁️ 阿里云原生</strong>：基于阿里云 ECS 裸金属实例、RDS PostgreSQL、Redis 构建，稳定可靠</li>
+</ul>
+<h3 id="_2">整体架构</h3>
+<p><img alt="img4.png" src="../img4.png" /></p>
+<hr />
+<h2 id="_3">🚀 部署流程</h2>
+<h3 id="_4">前置条件</h3>
+<blockquote>
+<p>⚠️ 已开通阿里云账号，并具备 ECS、RDS、Redis、VPC 等资源的创建权限</p>
+</blockquote>
+<h3 id="1">1. 一键创建实例</h3>
+<p>访问 <a href="https://computenest.console.aliyun.com/service/instance/create/cn-hangzhou?type=user&amp;ServiceId=service-318e76fe0ae7464f8d5c">计算巢 E2B 社区版部署页</a>，模板选择集群版，按页面提示填写基础参数。
+<img alt="img2.png" src="../img2.png" /></p>
+<h3 id="2">2. 确认资源配置</h3>
+<p>系统将自动生成<strong>费用预估明细</strong>。确认配置无误后，点击 <strong>下一步：确认订单</strong>，核对信息后点击 <strong>立即创建</strong>。</p>
+<blockquote>
+<p>⚠️ <strong>注意</strong>：ECS 嵌套虚拟化目前处于邀测阶段，部署前需完成加白，否则可能导致部署失败。详情请参见 <a href="https://help.aliyun.com/zh/ecs/user-guide/enable-nested-virtualization">为ECS实例开启嵌套虚拟化功能</a></p>
+<p>⚠️ <strong>注意</strong>：E2B 需要使用域名进行访问。您可以选择以下两种方式：</p>
+<ul>
+<li><strong>公网域名</strong>：购买公网域名并为其购买或生成自签名 TLS 证书，支持公网访问</li>
+<li>
+<p><strong>自定义域名</strong>：自定义一个域名并生成自定义的 TLS 证书，<strong>此方式无法通过公网访问E2B集群，仅可在 VPC 内部调试调用</strong>。因此我们预置的部分验证python脚本，如Desktop 沙箱部分无法体验。</p>
+</li>
+<li>
+<p><strong>生成TLS 证书</strong>：生成方式可参考 <a href="https://github.com/aliyun-computenest/quickstart-Sandbox-Manager-E2B/blob/main/docs/index.md">生成自签名证书</a></p>
+</li>
+</ul>
+<p>🕐 部署过程约需 10～20 分钟，请耐心等待。</p>
+</blockquote>
+<h2 id="_5">四、部署成功后的检查</h2>
+<h3 id="1_1">1. 获取访问地址与凭证</h3>
+<p>部署完成后，在计算巢控制台的实例详情页查看各种配置内容，其中比较重要的是：
+- <strong>E2B API URL</strong>
+- <strong>E2B API KEY</strong></p>
+<p>这两个内容需要配置到您的环境变量中，以通过SDK访问E2B集群。
+<img alt="img3.png" src="../img3.png" /></p>
+<h3 id="2-e2b-dashboard">2. 登录 E2B Dashboard</h3>
+<p>点击 <code>DashboardUI</code>，使用计算巢输出的账号与密码登录。当前预置邮箱为 <code>admin@e2b.com</code>，初始化密码以实例输出为准。</p>
+<p><img alt="使用计算巢输出的预置账号登录 E2B Dashboard" src="../dashboard-login.jpg" /></p>
+<p>登录后先查看 <strong>Sandboxes</strong> 页面。这里可以观察当前并发、每秒启动速率、历史峰值和并发曲线。</p>
+<p><img alt="E2B Dashboard 的 Sandboxes 监控页面" src="../sandbox-overview.jpg" /></p>
+<p>然后进入 <strong>Templates</strong>，确认 <code>base</code>、<code>code-interpreter-v1</code>、<code>browser-use</code>、<code>desktop</code> 等默认 Template 已经构建完成。</p>
+<p><img alt="E2B Dashboard 中可用的 Sandbox Templates" src="../template-list.jpg" /></p>
+<h3 id="3-nomad-jobs">3. 通过 Nomad 检测 Jobs</h3>
+<p>通过计算巢提供的安全代理打开 <code>NomadUI</code>，使用计算巢输出的 NomadToken登录，检查Jobs是否都正常运行：
+<img alt="nomad.png" src="../nomad.png" /></p>
+<hr />
+<h2 id="_6">📖 使用流程</h2>
+<h3 id="python-sdk">🐍 通过 Python SDK 使用</h3>
+<h4 id="_7">快速开始</h4>
+<blockquote>
+<p>⚠️ <strong>注意</strong>：使用前，您需要配置好环境变量：
+- E2B_API_URL，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
+- E2B_API_KEY，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
+- E2B_DOMAIN，E2B 域名，您购买的公网域名or自定义域名
+- SSL_CERT_FILE，受信任的 CA 证书文件路径，仅在自建环境使用自签 CA 时需要</p>
+</blockquote>
+<h3 id="sandbox">用例一：演示 Sandbox 完整生命周期</h3>
+<pre><code class="language-python">import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
+from e2b import Sandbox
+
+connection = {
+    &quot;api_url&quot;: os.environ[&quot;E2B_API_URL&quot;],
+    &quot;api_key&quot;: os.environ[&quot;E2B_API_KEY&quot;]
+}
+
+sandbox = Sandbox.create(
+    template=&quot;base&quot;,
+    timeout=60,
+    **connection
+)
+
+try:
+    sandbox_id = sandbox.sandbox_id
+    print('[1/5] 创建 sandbox:', sandbox.sandbox_id)
+    result = sandbox.commands.run('printf &quot;hello from my own E2B&quot; | tee /tmp/lifecycle.txt')
+    print(&quot;[2/5] 执行命令&quot;)
+
+    print(&quot;  stdout:&quot;, result.stdout)
+
+    print(&quot;[3/5] 暂停 Sandbox&quot;)
+    print(&quot;  paused:&quot;, sandbox.pause())
+
+    print(&quot;[4/5] 恢复 Sandbox&quot;)
+    sandbox = Sandbox.connect(sandbox_id, timeout=60, **connection)
+    result = sandbox.commands.run(&quot;cat /tmp/lifecycle.txt&quot;)
+    print(&quot;  resumed_stdout:&quot;, result.stdout)
+finally:
+    killed = sandbox.kill()
+    print(&quot;[5/5] 删除 sandbox:&quot;, sandbox.sandbox_id)
+</code></pre>
+<p>运行脚本，输出如下</p>
+<pre><code class="language-text">[1/5] 创建 sandbox: xxx
+[2/5] 执行命令
+  stdout: hello from my own E2B
+[3/5] 暂停 Sandbox
+  paused: True
+[4/5] 恢复 Sandbox
+  resumed_stdout: hello from my own E2B
+[5/5] 删除 sandbox: xxx
+</code></pre>
+<p><img alt="img12.png" src="../img12.png" /></p>
+<p>这个用例验证了完整生命周期链路：Create → Command → Pause → Resume → Kill。</p>
+<h3 id="template-template-sandbox">用例二：构建 Template，并从 Template 创建 Sandbox</h3>
+<p>Template 用于固化基础镜像、依赖、文件、环境变量和启动命令。以下示例创建一个临时 Template，构建完成后再从它创建 Sandbox：</p>
+<pre><code class="language-python">import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
+from e2b import Sandbox, Template, default_build_logger, wait_for_timeout
+
+connection = {
+    &quot;api_url&quot;: os.environ[&quot;E2B_API_URL&quot;],
+    &quot;api_key&quot;: os.environ[&quot;E2B_API_KEY&quot;],
+}
+
+template_name = &quot;base&quot;
+
+template = (
+    Template()
+    .from_base_image()
+    .set_envs({&quot;HELLO&quot;: &quot;hello from my own template&quot;})
+    .set_start_cmd('echo &quot;$HELLO&quot;', wait_for_timeout(1_000))
+)
+
+build = Template.build(
+    template,
+    template_name,
+    cpu_count=2,
+    memory_mb=2048,
+    on_build_logs=default_build_logger(),
+    **connection,
+)
+
+print(&quot;template_id:&quot;, build.template_id)
+print(&quot;build_id:&quot;, build.build_id)
+
+sandbox = Sandbox.create(template=template_name, timeout=120, **connection)
+try:
+    result = sandbox.commands.run(&quot;printf 'template sandbox is ready'&quot;)
+    print(&quot;sandbox_id:&quot;, sandbox.sandbox_id)
+    print(&quot;stdout:&quot;, result.stdout)
+finally:
+    sandbox.kill()
+</code></pre>
+<p>构建过程中可以在 <strong>Templates / Builds</strong> 查看状态与日志。
+<img alt="img13.png" src="../img13.png" /></p>
+<h3 id="computer-use">用例三：创建 Computer Use 桌面</h3>
+<p><code>e2b-desktop</code> 在 Sandbox 生命周期上封装了桌面、鼠标键盘和 VNC Stream。以下示例创建一个 Desktop Sandbox，启动带临时密码的 noVNC 服务，并输出可以在浏览器中打开的 URL：</p>
+<pre><code class="language-python">import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
+
+from e2b_desktop import Sandbox
+
+connection = {
+    &quot;api_url&quot;: os.environ[&quot;E2B_API_URL&quot;],
+    &quot;api_key&quot;: os.environ[&quot;E2B_API_KEY&quot;],
+}
+
+desktop = Sandbox.create(
+    template=&quot;desktop&quot;,
+    resolution=(1024, 720),
+    dpi=96,
+    timeout=300,
+    **connection,
+)
+
+try:
+    desktop.stream.start(require_auth=True)
+    auth_key = desktop.stream.get_auth_key()
+    stream_url = desktop.stream.get_url(auth_key=auth_key)
+
+    # 执行一次真实桌面动作：打开网页并移动鼠标。
+    desktop.open(&quot;https://example.com&quot;)
+    desktop.wait(2_000)
+    desktop.move_mouse(512, 360)
+
+    print(&quot;View desktop at:&quot;, stream_url)
+    print(&quot;screen_size:&quot;, desktop.get_screen_size())
+    print(&quot;cursor_position:&quot;, desktop.get_cursor_position())
+    input(&quot;在浏览器中打开 URL，验证完成后按回车清理资源：&quot;)
+finally:
+    try:
+        desktop.stream.stop()
+    finally:
+        desktop.kill()
+</code></pre>
+<p>在浏览器中打开 stream_url，即可查看并操作 Sandbox 中的 Linux 桌面，验证完整的 Computer Use 链路。</p>
+<p><img alt="img14.png" src="../img14.png" /></p>
+<hr />
+<h3 id="e2b-cli">🖥️ 通过 E2B CLI 使用</h3>
+<h4 id="_8">模板管理</h4>
+<p><strong>查看现有模板列表：</strong></p>
+<pre><code class="language-shell">e2b template list
+</code></pre>
+<p><strong>删除模板：</strong></p>
+<pre><code class="language-shell">e2b template delete &lt;template-id&gt;
+</code></pre>
+<h4 id="_9">沙箱管理</h4>
+<p><strong>查看运行中的沙箱：</strong></p>
+<pre><code class="language-shell">e2b sandbox list
+</code></pre>
+<p><strong>连接到指定沙箱（交互式终端）：</strong></p>
+<pre><code class="language-shell">e2b sandbox connect &lt;sandbox-id&gt;
+</code></pre>
+<p><strong>终止沙箱：</strong></p>
+<pre><code class="language-shell">e2b sandbox kill &lt;sandbox-id&gt;
+</code></pre>
+<hr />
+<h2 id="_10">⚖️ 扩缩容配置</h2>
+<p>E2B 集群版基于阿里云<strong>弹性伸缩（ESS）</strong>实现 API Worker 和 Client Worker 节点的动态扩缩容，以应对不同的负载需求。</p>
+<h3 id="_11">手动扩缩容</h3>
+<p>部署完成后，系统已预置以下四条弹性伸缩规则，可在阿里云 ESS 控制台手动执行：</p>
+<table>
+<thead>
+<tr>
+<th>规则名称</th>
+<th>作用</th>
+<th>调整数量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>api-scaling-out</code></td>
+<td>API Worker 扩容</td>
+<td>+1</td>
+</tr>
+<tr>
+<td><code>api-scaling-in</code></td>
+<td>API Worker 缩容</td>
+<td>-1</td>
+</tr>
+<tr>
+<td><code>client-scaling-out</code></td>
+<td>Client Worker 扩容</td>
+<td>+1</td>
+</tr>
+<tr>
+<td><code>client-scaling-in</code></td>
+<td>Client Worker 缩容</td>
+<td>-1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>操作步骤：</strong></p>
+<ol>
+<li>进入阿里云计算巢实例详情页，点击资源tab页，筛选弹性伸缩:伸缩组<img alt="img5.png" src="../img5.png" /></li>
+<li>找到对应的伸缩组（<code>client</code> 或 <code>api</code>）</li>
+<li>进入 <strong>伸缩规则</strong> 页面，选择对应规则点击 <strong>执行</strong>
+<img alt="img15.png" src="../img15.png" /></li>
+</ol>
+<h3 id="_12">自动扩缩容</h3>
+<ul>
+<li>伸缩组平均内存使用率连续 1 分钟达到 75% 时，新增 1 台 ECS；</li>
+<li>伸缩组平均CPU使用率连续 2 分钟达到 70% 时，新增 1 台 ECS；</li>
+<li>伸缩组平均内存使用率连续 10 分钟低于 30% 时，缩容 1 台 ECS(默认不开启)</li>
+</ul>
+<h3 id="_13">注意事项</h3>
+<blockquote>
+<p>⚠️ <strong>缩容注意</strong>：Client Worker 节点缩容时会触发生命周期钩子，系统会等待节点上的沙箱任务完成后再销毁实例（最长等待 <strong>60 分钟</strong>），请勿强制终止，避免沙箱数据丢失。</p>
+<p>⚠️ <strong>裸金属限制</strong>：Client Worker 必须使用裸金属实例（<code>ecs.ebmg6</code> / <code>ecs.ebmc6</code> 系列），扩容时请确保所选可用区有足够的裸金属资源配额。</p>
+</blockquote>
+<h2 id="_14">📊 可观测性配置（可选）</h2>
+<p>E2B 集群版基于阿里云 <strong>Prometheus</strong>、<strong>Grafana</strong> 实现可观测性：按下列步骤集成 Prometheus 与 Loki 后，可在 Grafana 中统一查询 Metrics 与 Logs 并完成可视化。</p>
+<p><strong>操作步骤：</strong></p>
+<ol>
+<li>
+<p>登录 <a href="https://armsnext.console.aliyun.com/grafana#/workspace">阿里云可观测可视化 Grafana 控制台</a>。</p>
+</li>
+<li>
+<p>创建可观测可视化Grafana版：</p>
+</li>
+<li>在左侧导航栏，单击工作区管理。</li>
+<li>在工作区列表中，单击创建工作区。</li>
+<li>
+<p>在购买页面，配置地域和集群部署地域一致，版本选择专家版或者高级版，Grafana版本号选择 Grafana 11.4.x，并单击立即购买。</p>
+</li>
+<li>
+<p>开通私网地址：</p>
+</li>
+<li>在 <a href="https://armsnext.console.aliyun.com/grafana#/workspace">阿里云可观测可视化 Grafana 控制台</a> 工作区列表中，选择创建的工作区。</li>
+<li>在基本信息中，点击开通私网地址</li>
+</ol>
+<p><img alt="img6.png" src="../img6.png" /></p>
+<ul>
+<li>
+<p>选择集群部署的 VPC、交换机以及安全组，点击开通</p>
+</li>
+<li>
+<p>集成 Prometheus：</p>
+</li>
+<li>在工作区页面的云服务集成中，选择 Prometheus 监控服务，搜索 prometheus-e2b, 点击集成。</li>
+</ul>
+<p><img alt="img7.png" src="../img7.png" /></p>
+<ul>
+<li>
+<p>集成数据源，配置ak、sk后，点击确认，请确认配置的 ak 具有 AliyunPrometheusMetricReadAccess 权限。</p>
+</li>
+<li>
+<p>集成 Loki：</p>
+</li>
+<li>在工作区页面中，点击公网地址，进入 Grafana 公网页面。</li>
+<li>在左侧导航栏中，点击添加新连接，选择 Loki。</li>
+</ul>
+<p><img alt="img8.png" src="../img8.png" /></p>
+<ul>
+<li>配置 Connection，填写URL格式为：http://{API Worker ECS 的私网 IP}:3100</li>
+</ul>
+<p><img alt="img9.png" src="../img9.png" />   </p>
+<ul>
+<li>
+<p>点击 Save &amp; test 完成配置</p>
+</li>
+<li>
+<p>集成数据查看：</p>
+</li>
+<li>在 Grafana 公网页面中，点击探索中的 Metrics，选择第 4 步配置的 Prometheus 集成的数据源，即可查看 Metrics 数据。</li>
+</ul>
+<p><img alt="img10.png" src="../img10.png" /></p>
+<ul>
+<li>在 Grafana 公网页面中，点击探索中的 Logs，选择第 5 步配置的 Loki 集成的数据源，即可查看 Logs 数据。</li>
+</ul>
+<h2 id="_15"><img alt="img11.png" src="../img11.png" /></h2>
+<h2 id="_16">📚 更多资源</h2>
+<ul>
+<li><strong>官方文档</strong>：<a href="https://e2b.dev/docs">E2B 官方文档</a>（含完整 API 参考、SDK 文档、智能体集成示例）</li>
+<li><strong>Python SDK</strong>：<a href="https://github.com/e2b-dev/e2b-code-interpreter">e2b-dev/e2b-code-interpreter</a></li>
+<li><strong>CLI 工具</strong>：<a href="https://www.npmjs.com/package/@e2b/cli">@e2b/cli on npm</a></li>
+</ul>
+        
+      </div>
+
+      <div class="copyrights">© 2009-2022 Aliyun.com 版权所有</div>
+    </div>
+  </div>
+  
+  <!--
+  MkDocs version      : 1.6.1
+  Docs Build Date UTC : 2026-08-14 03:35:58.996880+00:00
+  -->
+</body>
+</html>
