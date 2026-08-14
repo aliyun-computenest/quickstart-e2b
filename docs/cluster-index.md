@@ -31,6 +31,8 @@
 
 系统将自动生成**费用预估明细**。确认配置无误后，点击 **下一步：确认订单**，核对信息后点击 **立即创建**。
 
+> ⚠️ **注意**：ECS 嵌套虚拟化目前处于邀测阶段，部署前需完成加白，否则可能导致部署失败。详情请参见 [为ECS实例开启嵌套虚拟化功能](https://help.aliyun.com/zh/ecs/user-guide/enable-nested-virtualization)
+
 > ⚠️ **注意**：E2B 需要使用域名进行访问。您可以选择以下两种方式：
 >
 > - **公网域名**：购买公网域名并为其购买或生成自签名 TLS 证书，支持公网访问
@@ -39,7 +41,10 @@
 > - **生成TLS 证书**：生成方式可参考 [生成自签名证书](https://github.com/aliyun-computenest/quickstart-Sandbox-Manager-E2B/blob/main/docs/index.md)
 
 > 🕐 部署过程约需 10～20 分钟，请耐心等待。
-### 3. 获取访问地址
+
+## 四、部署成功后的检查
+
+### 1. 获取访问地址与凭证
 
 部署完成后，在计算巢控制台的实例详情页查看各种配置内容，其中比较重要的是：
 - **E2B API URL**
@@ -48,36 +53,25 @@
 这两个内容需要配置到您的环境变量中，以通过SDK访问E2B集群。
 ![img3.png](img3.png)
 
-### 4. 初始化基础沙箱模板
+### 2. 登录 E2B Dashboard
+点击 `DashboardUI`，使用计算巢输出的账号与密码登录。当前预置邮箱为 `admin@e2b.com`，初始化密码以实例输出为准。
 
-首次部署完成后，需要登录到 build 节点（如下图所示），执行以下命令构建基础沙箱模板：
+![使用计算巢输出的预置账号登录 E2B Dashboard](dashboard-login.jpg)
 
-![img1.png](img1.png)
+登录后先查看 **Sandboxes** 页面。这里可以观察当前并发、每秒启动速率、历史峰值和并发曲线。
+
+![E2B Dashboard 的 Sandboxes 监控页面](sandbox-overview.jpg)
+
+然后进入 **Templates**，确认 `base`、`code-interpreter-v1`、`browser-use`、`desktop` 等默认 Template 已经构建完成。
+
+![E2B Dashboard 中可用的 Sandbox Templates](template-list.jpg)
+
+### 3. 通过 Nomad 检测 Jobs
+
+通过计算巢提供的安全代理打开 `NomadUI`，使用计算巢输出的 NomadToken登录，检查Jobs是否都正常运行：
+![nomad.png](nomad.png)
 
 
-```bash
-sudo su
-cd /root/script
-sh create_template.sh
-```
-
-这个脚本默认会构建**代码执行沙箱**模板，基于 `code-interpreter` 镜像，内置 Python 运行时，适合大多数 AI Agent 代码执行场景。
-
-根据你的业务需求，也可以选择其他类型的模板：
-
-```bash
-# sh /root/script/create_template.sh --type desktop
-# sh /root/script/create_template.sh --type browser-use
-
-# 自定义镜像沙箱（基于你自己的 Dockerfile 构建）
-sh /root/script/create_template.sh --docker-file /path/to/your/Dockerfile
-```
-
-构建完成后，验证模板是否就绪：
-
-```shell
-e2b template list
-```
 
 ---
 
@@ -87,67 +81,169 @@ e2b template list
 
 #### 快速开始
 > ⚠️ **注意**：使用前，您需要配置好环境变量：
-> - E2B_ACCESS_TOKEN，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
+> - E2B_API_URL，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
 > - E2B_API_KEY，E2B实例部署完成后可以在计算巢控制台的实例详情页查看
 > - E2B_DOMAIN，E2B 域名，您购买的公网域名or自定义域名
+> - SSL_CERT_FILE，受信任的 CA 证书文件路径，仅在自建环境使用自签 CA 时需要
 
-以下示例演示了沙箱的完整生命周期：创建 → 执行命令 → 暂停 → 恢复。
+
+### 用例一：演示 Sandbox 完整生命周期
 
 ```python
+import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
 from e2b import Sandbox
-import time
 
-def main():
-   # 1. 创建沙箱——从模板快照恢复，秒级完成
-   # template_id 为模板 ID
-   # timeout 为沙箱最大存活时间（秒），超时后自动销毁
-   # 步骤1: 创建 sandbox
-   print("\n[步骤1] 创建 sandbox...")
-   start_time = time.monotonic()
-   sandbox = Sandbox.create('dgllk1gmhsbar3l6d08l', timeout=1800)
-   input("按回车键继续..." + sandbox.envd_api_url)
+connection = {
+    "api_url": os.environ["E2B_API_URL"],
+    "api_key": os.environ["E2B_API_KEY"]
+}
 
-   time.sleep(5)
-   print(f"创建 sandbox 耗时: {time.monotonic() - start_time:.2f} 秒")
-   print(f"Sandbox ID: {sandbox.sandbox_id}")
-   print(f"envd host: {sandbox.get_host(49983)}")
-   result = sandbox.commands.run('echo "Hello from E2B Sandbox!"')
-   print(result.stdout)
+sandbox = Sandbox.create(
+    template="base",
+    timeout=60,
+    **connection
+)
 
-   # 步骤2: 暂停 sandbox
-   print("\n[步骤2] 执行 sandbox beta_pause...")
-   start_time = time.monotonic()
-   pause_success = sandbox.beta_pause()
-   print(f"pause 耗时: {time.monotonic() - start_time:.2f} 秒")
-   print(f"pause success: {pause_success}")
+try:
+    sandbox_id = sandbox.sandbox_id
+    print('[1/5] 创建 sandbox:', sandbox.sandbox_id)
+    result = sandbox.commands.run('printf "hello from my own E2B" | tee /tmp/lifecycle.txt')
+    print("[2/5] 执行命令")
 
-   print("等待 60 秒让 sandbox 完全暂停...")
-   time.sleep(60)
+    print("  stdout:", result.stdout)
 
-   # 步骤3: resume 并验证文件持久化
-   print("\n[步骤3] 重新连接 sandbox（resume）...")
-   start_time = time.monotonic()
-   same_sandbox = sandbox.connect(timeout=180)
-   print(f"connect 耗时: {time.monotonic() - start_time:.2f} 秒")
-   print(f"重新连接成功，Sandbox ID: {same_sandbox.sandbox_id}")
+    print("[3/5] 暂停 Sandbox")
+    print("  paused:", sandbox.pause())
 
-
-   print("\n所有步骤执行完毕!")
-
-if __name__ == "__main__":
-   main()
+    print("[4/5] 恢复 Sandbox")
+    sandbox = Sandbox.connect(sandbox_id, timeout=60, **connection)
+    result = sandbox.commands.run("cat /tmp/lifecycle.txt")
+    print("  resumed_stdout:", result.stdout)
+finally:
+    killed = sandbox.kill()
+    print("[5/5] 删除 sandbox:", sandbox.sandbox_id)
+```
+运行脚本，输出如下
+```text
+[1/5] 创建 sandbox: xxx
+[2/5] 执行命令
+  stdout: hello from my own E2B
+[3/5] 暂停 Sandbox
+  paused: True
+[4/5] 恢复 Sandbox
+  resumed_stdout: hello from my own E2B
+[5/5] 删除 sandbox: xxx
 ```
 
-#### 常用 API 说明
+![img12.png](img12.png)
 
-| 方法 | 说明                  |
-|------|---------------------|
-| `Sandbox.create(template_id, timeout)` | 创建新沙箱，`timeout` 单位为秒 |
-| `sandbox.commands.run(cmd)` | 在沙箱中同步执行 Shell 命令   |
-| `sandbox.get_host(port)` | 获取沙箱内指定端口的外部访问地址    |
-| `sandbox.beta_pause()` | 暂停沙箱，状态持久化到oos      |
-| `sandbox.connect(timeout)` | 恢复已暂停的沙箱            |
-| `sandbox.kill()` | 销毁沙箱，释放资源           |
+这个用例验证了完整生命周期链路：Create → Command → Pause → Resume → Kill。
+
+
+### 用例二：构建 Template，并从 Template 创建 Sandbox
+
+Template 用于固化基础镜像、依赖、文件、环境变量和启动命令。以下示例创建一个临时 Template，构建完成后再从它创建 Sandbox：
+
+```python
+import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
+from e2b import Sandbox, Template, default_build_logger, wait_for_timeout
+
+connection = {
+    "api_url": os.environ["E2B_API_URL"],
+    "api_key": os.environ["E2B_API_KEY"],
+}
+
+template_name = "base"
+
+template = (
+    Template()
+    .from_base_image()
+    .set_envs({"HELLO": "hello from my own template"})
+    .set_start_cmd('echo "$HELLO"', wait_for_timeout(1_000))
+)
+
+build = Template.build(
+    template,
+    template_name,
+    cpu_count=2,
+    memory_mb=2048,
+    on_build_logs=default_build_logger(),
+    **connection,
+)
+
+print("template_id:", build.template_id)
+print("build_id:", build.build_id)
+
+sandbox = Sandbox.create(template=template_name, timeout=120, **connection)
+try:
+    result = sandbox.commands.run("printf 'template sandbox is ready'")
+    print("sandbox_id:", sandbox.sandbox_id)
+    print("stdout:", result.stdout)
+finally:
+    sandbox.kill()
+```
+构建过程中可以在 **Templates / Builds** 查看状态与日志。
+![img13.png](img13.png)
+
+
+### 用例三：创建 Computer Use 桌面
+
+`e2b-desktop` 在 Sandbox 生命周期上封装了桌面、鼠标键盘和 VNC Stream。以下示例创建一个 Desktop Sandbox，启动带临时密码的 noVNC 服务，并输出可以在浏览器中打开的 URL：
+
+```python
+import os
+
+# 仅在自建环境使用自签 CA 时需要，且必须在 import e2b 前设置。
+os.environ['SSL_CERT_FILE'] = '/path/to/ca-fullchain.pem'
+
+
+from e2b_desktop import Sandbox
+
+connection = {
+    "api_url": os.environ["E2B_API_URL"],
+    "api_key": os.environ["E2B_API_KEY"],
+}
+
+desktop = Sandbox.create(
+    template="desktop",
+    resolution=(1024, 720),
+    dpi=96,
+    timeout=300,
+    **connection,
+)
+
+try:
+    desktop.stream.start(require_auth=True)
+    auth_key = desktop.stream.get_auth_key()
+    stream_url = desktop.stream.get_url(auth_key=auth_key)
+
+    # 执行一次真实桌面动作：打开网页并移动鼠标。
+    desktop.open("https://example.com")
+    desktop.wait(2_000)
+    desktop.move_mouse(512, 360)
+
+    print("View desktop at:", stream_url)
+    print("screen_size:", desktop.get_screen_size())
+    print("cursor_position:", desktop.get_cursor_position())
+    input("在浏览器中打开 URL，验证完成后按回车清理资源：")
+finally:
+    try:
+        desktop.stream.stop()
+    finally:
+        desktop.kill()
+```
+
+在浏览器中打开 stream_url，即可查看并操作 Sandbox 中的 Linux 桌面，验证完整的 Computer Use 链路。
+
+![img14.png](img14.png)
 
 ---
 
@@ -159,18 +255,6 @@ if __name__ == "__main__":
 
 ```shell
 e2b template list
-```
-
-**使用默认镜像创建模板（基于 `e2bdev/code-interpreter`）：**
-
-```shell
-sh /root/script/create_template.sh
-```
-
-**使用自定义 Dockerfile 创建模板：**
-
-```shell
-sh /root/script/create_template.sh --docker-file ./path/to/your/Dockerfile
 ```
 
 **删除模板：**
@@ -221,6 +305,13 @@ E2B 集群版基于阿里云**弹性伸缩（ESS）**实现 API Worker 和 Clien
 1. 进入阿里云计算巢实例详情页，点击资源tab页，筛选弹性伸缩:伸缩组![img5.png](img5.png)
 2. 找到对应的伸缩组（`client` 或 `api`）
 3. 进入 **伸缩规则** 页面，选择对应规则点击 **执行**
+![img15.png](img15.png)
+
+### 自动扩缩容
+
+- 伸缩组平均内存使用率连续 1 分钟达到 75% 时，新增 1 台 ECS；
+- 伸缩组平均CPU使用率连续 2 分钟达到 70% 时，新增 1 台 ECS；
+- 伸缩组平均内存使用率连续 10 分钟低于 30% 时，缩容 1 台 ECS(默认不开启)
 
 ### 注意事项
 
